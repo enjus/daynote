@@ -101,4 +101,8 @@ export const api = {
   async deleteTag(id: string): Promise<void> {
     await fetch(`${API_BASE}/tags/${id}`, { method: 'DELETE' })
   },
+
+  async unfurlUrl(url: string): Promise<{ url: string; title: string; favicon: string }> {
+    return apiRequest(`/unfurl?url=${encodeURIComponent(url)}`)
+  },
 }

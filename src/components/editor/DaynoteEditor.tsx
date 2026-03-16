@@ -9,6 +9,10 @@ import { useEffect, useCallback } from 'react'
 import { createTagMark } from './TagMark'
 import { SpoilerMark } from './SpoilerMark'
 import { BubbleToolbar } from './BubbleToolbar'
+import { LinkFaviconExtension } from './LinkFaviconExtension'
+import { api } from '../../lib/api'
+
+const BARE_URL_RE = /^https?:\/\/\S+$/
 
 interface DaynoteEditorProps {
   content: string // markdown
@@ -50,6 +54,7 @@ export function DaynoteEditor({
       SpoilerMark,
       Markdown,
       createTagMark(onTagCreate),
+      LinkFaviconExtension,
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -59,6 +64,32 @@ export function DaynoteEditor({
       onTagsChanged?.(getTagsInDoc(editor))
     },
     editorProps: {
+      handlePaste: (view, event) => {
+        const text = event.clipboardData?.getData('text/plain')?.trim()
+        if (!text || !BARE_URL_RE.test(text) || text.includes('\n')) return false
+
+        // Don't intercept paste inside code blocks
+        const { $from } = view.state.selection
+        if ($from.parent.type.name === 'codeBlock') return false
+
+        event.preventDefault()
+
+        api.unfurlUrl(text)
+          .then(({ title }) => {
+            const { state } = view
+            const linkMark = state.schema.marks.link?.create({ href: text })
+            if (!linkMark) return
+            view.dispatch(state.tr.replaceSelectionWith(state.schema.text(title, [linkMark]), false))
+          })
+          .catch(() => {
+            const { state } = view
+            const linkMark = state.schema.marks.link?.create({ href: text })
+            if (!linkMark) return
+            view.dispatch(state.tr.replaceSelectionWith(state.schema.text(text, [linkMark]), false))
+          })
+
+        return true
+      },
       handleKeyDown: (_view, event) => {
         // Tab to increase heading level
         if (event.key === 'Tab' && !event.shiftKey && editor) {

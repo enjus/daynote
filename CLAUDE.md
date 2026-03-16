@@ -10,7 +10,7 @@ npm run build        # tsc -b && vite build
 npm run lint         # eslint
 
 npx wrangler pages dev dist --d1=DB=daynote-db   # run full stack locally (build first)
-npx wrangler pages deploy dist                    # deploy to Cloudflare Pages
+npx wrangler pages deploy dist --branch=production # deploy to Cloudflare Pages
 npx wrangler d1 execute daynote-db --file=schema.sql --remote  # apply schema migrations
 ```
 
